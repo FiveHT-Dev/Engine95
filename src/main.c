@@ -1,41 +1,83 @@
-/*
-Raylib example file.
-This is an example main file for a simple raylib project.
-Use this as a starting point or replace it with your code.
-
-by Jeffery Myers is marked with CC0 1.0. To view a copy of this license, visit https://creativecommons.org/publicdomain/zero/1.0/
-
-*/
-
 #include "raylib.h"
-
 #include "resource_dir.h"	// utility header for SearchAndSetResourceDir
+#include "stdio.h"
+#include "math.h"
 
-int main ()
+typedef struct 
 {
-	// Tell the window to use vsync and work on high DPI displays
-	SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
+	int x,y,z;
+	int pitch;
+	int yaw;
+}Player;
 
-	// Create the window and OpenGL context
-	InitWindow(1280, 800, "Hello Raylib");
+typedef struct
+{
+	float cos[360];
+	float sin[360];
+}TrigTables;
 
-	// Utility function from resource_dir.h to find the resources folder and set it as the current working directory so we can load from it
-	SearchAndSetResourceDir("resources");
-	
-	// game loop
-	while (!WindowShouldClose())		// run the loop untill the user presses ESCAPE or presses the Close button on the window
+
+void init(Player* p, TrigTables* t)
+{
+	p->x = 70;
+	p->y = -110;
+	p->z = 20;
+	p->pitch = 0;
+	p->yaw = 0;
+
+	for(int i = 0; i < 360; i++)
 	{
-		// drawing
-		BeginDrawing();
+		t->cos[i] = cos((float)i / 180.0f * PI);
+		t->sin[i] = sin((float)i / 180.0f * PI);
+	}
+}
 
-		// Setup the back buffer for drawing (clear color and depth buffers)
+void movePlayer(Player* p, TrigTables* t)
+{
+	bool isMPressed = IsKeyDown(KEY_M);
+	if(IsKeyDown(KEY_A) && !isMPressed) {p->yaw -= 4; if(p->yaw < 0){p->yaw += 360;}}
+	if(IsKeyDown(KEY_D) && !isMPressed) {p->yaw += 4; if(p->yaw > 359){p->yaw -= 360;}}
+	int dx = t->sin[p->yaw] * 10.0;
+	int dy = t->cos[p->yaw] * 10.0;
+	if(IsKeyDown(KEY_W) && !isMPressed) {p->x += dx; p->y += dy;}
+	if(IsKeyDown(KEY_S) && !isMPressed) {p->x -= dx; p->y -= dy;}
+
+	if(IsKeyDown(KEY_Q)) {p->x += dy; p->y -= dx;}
+	if(IsKeyDown(KEY_E)) {p->x -= dy; p->y += dx;}
+
+	if(IsKeyDown(KEY_A) && isMPressed) {p->pitch -= 1;}
+	if(IsKeyDown(KEY_D) && isMPressed) {p->pitch += 1;}
+	if(IsKeyDown(KEY_W) && isMPressed) {p->z -= 4;}
+	if(IsKeyDown(KEY_S) && isMPressed) {p->z += 4;}
+}
+
+void draw3D()
+{
+
+}
+
+int main()
+{
+	Player p;
+	TrigTables t;
+	init(&p, &t);
+	SetConfigFlags(FLAG_VSYNC_HINT | FLAG_WINDOW_HIGHDPI);
+	InitWindow(1280, 800, "Hello Raylib");
+	SearchAndSetResourceDir("resources");
+
+	//std::cout << &p.x << std::endl;
+
+	while (!WindowShouldClose())
+	{
+		PollInputEvents();
+		BeginDrawing();
 		ClearBackground(BLACK);
 		
-		// end the frame and get ready for the next one  (display frame, poll input, etc...)
+		movePlayer(&p, &t);
+
 		EndDrawing();
 	}
 
-	// destroy the window and cleanup the OpenGL context
 	CloseWindow();
 	return 0;
 }
